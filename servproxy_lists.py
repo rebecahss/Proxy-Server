@@ -10,35 +10,38 @@ IP = '127.0.0.1'
 Porta = 8088
 buffer_size = 8192
 
-def getdenypage():
-	arqdenypage = open("deny_terms_page","r")
+def getdenypage(permission):
+	if permission == 0:
+		arqdenypage = open("blacklistpage","r")
+	else:
+		arqdenypage = open("deny_terms_page","r")
 	pagedeny = arqdenypage.read()
 	pagedenybyte = pagedeny.encode('utf-8')
 	arqdenypage.close()
 	return pagedenybyte
 
 def finddeny_terms (data):
-	#Converte a variavel data em string
+										#Converte a variavel data em string
 	datastr = data.decode("utf-8")
-	#Abre o arquivo de deny_terms
+										#Abre o arquivo de deny_terms
 	arqdeny = open("deny_terms","r")
 	deny_term = arqdeny.readlines()
-	#Inicializa a variável de retorno sinalizando que nenhum deny_term foi encontrado
+										#Inicializa a variável de retorno sinalizando que nenhum deny_term foi encontrado
 	founded = 0
-	#Busca todos os termos dentro do arquivo
+										#Busca todos os termos dentro do arquivo
 	for line in deny_term:
-		#Isola o termo a ser buscado
+										#Isola o termo a ser buscado
 		term = line.split('\n')
-		#Procura o termo no pacote de dados recebido/enviado
+										#Procura o termo no pacote de dados recebido/enviado
 		achou = datastr.find(term[0])
-		if achou == -1:			#Não encontrou o termo
+		if achou == -1:							#Não encontrou o termo
 			founded = 0
-		else:				#Termo encontrado no pacote
+		else:								#Termo encontrado no pacote
 			print('Termo encontrado:', term[0])
 			founded = 1
 			arqdeny.close()
 			return founded
-	#Caso após a consulta de todos os deny_terms nenhum seja encontrado, retorna 0 
+										#Caso após a consulta de todos os deny_terms nenhum seja encontrado, retorna 0 
 	arqdeny.close()
 	return founded
 
@@ -52,13 +55,13 @@ def geralog(webserver, permission, data):
 	arqlog.write(' _ ')
 	arqlog.write(' Acesso ')
 	if permission == 0:
-		arqlog.write('negado _ URL presente na blacklist:\t')
+		arqlog.write('bloqueado _ URL presente na blacklist:\t')
 		
 	if permission == 1:
 		arqlog.write('permitido _ URL presente na whitelist:\t')
 		
 	if permission == 2:
-		arqlog.write('permitido _ Mensagem sem deny_terms\t\t')
+		arqlog.write('permitido _ Mensagem sem deny_terms\t\t\t')
 		
 	if permission == 3:
 		arqlog.write('bloqueado _ Requisição contém deny_terms\t')
@@ -81,13 +84,13 @@ def proxy(webserver, port, conn, addr, data, permission):
 			reply = s.recv(buffer_size)
 			if (len(reply)> 0):
 				founded_reply = finddeny_terms(reply)
-				#print("terms?")
 				if founded_reply == 1:
 					permission = 4
 					geralog(webserver, permission, data)
-					reply = getdenypage()
-					conn.send(reply)
+					replydeny = getdenypage(permission)
+					conn.send(replydeny)
 				else:
+					geralog(webserver, permission, data)
 					conn.send(reply)
 				
 			else:
@@ -98,6 +101,7 @@ def proxy(webserver, port, conn, addr, data, permission):
 		conn.close()
 
 	except socket.error (value, massage):
+		print("erro proxy")
 		s.close()
 		conn.close()
 		sys.exit(1)
@@ -159,6 +163,8 @@ def conn_cliente(conn, data, addr):
 		permission = checksite(webserver+'\n')
 		if permission == 0: 									#Destino contido na blacklist
 			geralog(webserver, permission, data)
+			replydeny = getdenypage(permission)
+			conn.send(replydeny)
 			conn.close()
 			
 		else: 											#Caso não contido na blacklist

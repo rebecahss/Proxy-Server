@@ -20,9 +20,10 @@ p	{text-indent:20px;
 -->
 </style>
 </head>
-<body bgcolor = "#E0F8F7" text = "#000000">
+<body bgcolor = "#FF0000" text = "#000000">
 <h1>Acesso negado!</h1>
 
-<h3>A pagina com termos proibidos!</h3>
+<h3>A pagina esta na blacklist!</h3>
 </body>
 </html>
+	
